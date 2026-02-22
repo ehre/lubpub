@@ -1,50 +1,20 @@
 <!DOCTYPE html>
 <html lang="sv">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LUB Länk-konverterare</title>
-
-  <!-- Shared styling (hosted on apex site) -->
-  <link rel="stylesheet" href="https://ehrencrona.org/shared.css">
-
-  <!-- Minimal page-specific tweaks -->
-  <style>
-    .lubpub-wrap{
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      padding: 10px 0 0;
-    }
-    .lubpub-card{
-      width: 100%;
-      max-width: 450px;
-      padding: 2.5rem;
-      text-align: center;
-    }
-    .lubpub-card h2{
-      margin: 0 0 0.5rem;
-      color: inherit;
-    }
-    .lubpub-card p{
-      margin: 0 0 1.5rem;
-      color: var(--muted-light);
-      font-size: 0.95rem;
-    }
-    @media (prefers-color-scheme: dark){
-      .lubpub-card p{ color: var(--muted-dark); }
-    }
-    .footer{
-      margin-top: 1.5rem;
-      font-size: 0.8rem;
-      color: #999;
-    }
-    @media (prefers-color-scheme: dark){
-      .footer{ color: #a8a8a8; }
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LUB Länk-konverterare</title>
+<link rel="stylesheet" href="https://ehrencrona.org/shared.css">
+<style>
+  .lubpub-wrap{display:flex;justify-content:center;align-items:center;padding:10px 0 0}
+  .lubpub-card{width:100%;max-width:450px;padding:2.5rem;text-align:center}
+  .lubpub-card h2{margin:0 0 .5rem}
+  .lubpub-card p{margin:0 0 1.5rem;color:var(--muted-light);font-size:.95rem}
+  @media (prefers-color-scheme:dark){.lubpub-card p{color:var(--muted-dark)}}
+  .footer{margin-top:1.5rem;font-size:.8rem;color:#999}
+  @media (prefers-color-scheme:dark){.footer{color:#a8a8a8}}
+</style>
 </head>
-
 <body>
 <div class="page">
   <header class="brand-header">
@@ -59,10 +29,8 @@
       <div class="card lubpub-card">
         <h2>LUB Proxy</h2>
         <p>Klistra in länk för att öppna i ny flik</p>
-
-        <input class="field" type="text" id="urlInput" placeholder="https://www.nature.com/..." autofocus>
+        <input class="field" id="urlInput" type="text" placeholder="https://www.nature.com/..." autofocus>
         <button class="btn" id="openBtn">Öppna via biblioteket</button>
-
         <div class="footer">Länken rensas automatiskt efter klick</div>
       </div>
     </div>
@@ -70,37 +38,31 @@
 </div>
 
 <script>
+(() => {
   const input = document.getElementById('urlInput');
-  const button = document.getElementById('openBtn');
+  const btn = document.getElementById('openBtn');
 
-  function handleNavigation() {
-    const rawUrl = input.value.trim();
-    if (!rawUrl) return;
+  const go = () => {
+    const raw = input.value.trim();
+    if (!raw) return;
 
     try {
-      let cleanUrl = rawUrl.split('?')[0];
-
-      let urlObj = new URL(cleanUrl);
-      let newHost = urlObj.hostname.replace(/\./g, '-');
-
-      let finalUrl = `${urlObj.protocol}//${newHost}.ludwig.lub.lu.se${urlObj.pathname}${urlObj.search}`;
-
+      const clean = raw.split('?')[0];
+      const u = new URL(clean);
+      const host = u.hostname.replace(/\./g, '-');
+      const finalUrl = `${u.protocol}//${host}.ludwig.lub.lu.se${u.pathname}${u.search}`;
       window.open(finalUrl, '_blank');
-
       input.value = '';
       input.focus();
-
-    } catch (err) {
+    } catch (e) {
       alert("Kunde inte tolka länken. Kontrollera att den är korrekt formaterad.");
-      console.error(err);
+      console.error(e);
     }
-  }
+  };
 
-  button.addEventListener('click', handleNavigation);
-
-  input.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') handleNavigation();
-  });
+  btn.addEventListener('click', go);
+  input.addEventListener('keydown', e => (e.key === 'Enter') && go());
+})();
 </script>
 </body>
 </html>
