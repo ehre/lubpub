@@ -9,7 +9,7 @@
 <style>
   .lubpub-wrap{display:flex;justify-content:center;align-items:center;padding:10px 0 0}
   .lubpub-card{width:100%;max-width:450px;padding:2.5rem;text-align:center}
-  .lubpub-card h2{margin:0 0 .5rem}
+  .lubpub-card h2{margin:0 0 .5rem;color:var(--brand)}
   .lubpub-card p{margin:0 0 1.5rem;color:var(--muted);font-size:.95rem}
   .footer{margin-top:1.5rem;font-size:.8rem;color:var(--muted)}
 </style>
@@ -24,7 +24,6 @@
      </picture>
     </a>
   </header>
-
   <main class="content">
     <div class="content-inner lubpub-wrap">
       <div class="card lubpub-card">
@@ -37,16 +36,13 @@
     </div>
   </main>
 </div>
-
 <script>
 (() => {
   const input = document.getElementById('urlInput');
   const btn = document.getElementById('openBtn');
-
   const go = () => {
     const raw = input.value.trim();
     if (!raw) return;
-
     // PMID: enbart siffror
     if (/^\d+$/.test(raw)) {
       window.open(`http://lulinker.lub.lu.se/?sid=Entrez:PubMed&id=pmid:${raw}`, '_blank');
@@ -54,7 +50,6 @@
       input.focus();
       return;
     }
-
     // URL: samma logik som original
     try {
       const clean = raw.split('?')[0];
@@ -69,7 +64,6 @@
       console.error(e);
     }
   };
-
   btn.addEventListener('click', go);
   input.addEventListener('keydown', e => (e.key === 'Enter') && go());
 })();
