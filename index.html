@@ -3,32 +3,30 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LUB Länk-konverterare</title>
+<title>LubPub</title>
 <link rel="icon" href="https://ehrencrona.org/favicon.ico">
 <link rel="stylesheet" href="https://ehrencrona.org/shared.css">
 <style>
-  .lubpub-wrap{display:flex;justify-content:center;align-items:center;padding:10px 0 0}
-  .lubpub-card{width:100%;max-width:450px;padding:2.5rem;text-align:center}
-  .lubpub-card h2{margin:0 0 .5rem;color:var(--brand)}
-  .lubpub-card p{margin:0 0 1.5rem;color:var(--muted);font-size:.95rem}
-  .footer{margin-top:1.5rem;font-size:.8rem;color:var(--muted)}
+  .lubpub-card { width: 100%; max-width: 450px; padding: 2.5rem }
+  .lubpub-card .field { border-color: var(--border) }
+  .footer { margin-top: 1.5rem; font-size: .8rem; color: var(--muted); text-align: center }
 </style>
 </head>
 <body>
 <div class="page">
   <header class="brand-header">
     <a href="https://ehrencrona.org">
-     <picture>
-      <source srcset="https://ehrencrona.org/ehrencrona_logo_darkmode.png" media="(prefers-color-scheme: dark)">
-      <img class="brand-logo" src="https://ehrencrona.org/ehrencrona_logo.png" alt="Ehrencrona logo">
-     </picture>
+      <picture>
+        <source srcset="https://ehrencrona.org/ehrencrona_logo_darkmode.png" media="(prefers-color-scheme: dark)">
+        <img class="brand-logo" src="https://ehrencrona.org/ehrencrona_logo.png" alt="Ehrencrona logo">
+      </picture>
     </a>
   </header>
   <main class="content">
-    <div class="content-inner lubpub-wrap">
-      <div class="card lubpub-card">
-        <h2>LubPub Proxy</h2>
-        <p>Klistra in artikellänk eller skriv ett PMID för att öppna i ny flik</p>
+    <div class="content-inner">
+      <h1 class="home-title">LubPub Proxy</h1>
+      <p style="text-align:center; color:var(--muted); font-size:.95rem; margin: 0 0 1.2rem">Klistra in artikellänk eller skriv ett PMID för att öppna i ny flik</p>
+      <div class="card lubpub-card" style="margin: 0 auto">
         <input class="field" id="urlInput" type="text" placeholder="https://... eller PMID, t.ex. 36927524" autofocus>
         <button class="btn" id="openBtn">Öppna via biblioteket</button>
         <div class="footer">Länken rensas automatiskt efter klick</div>
@@ -40,28 +38,22 @@
 (() => {
   const input = document.getElementById('urlInput');
   const btn   = document.getElementById('openBtn');
-
   const toludwig = url => {
     const clean = url.split('?')[0];
     const u     = new URL(clean);
     const host  = u.hostname.replace(/\./g, '-');
     return `${u.protocol}//${host}.ludwig.lub.lu.se${u.pathname}${u.search}`;
   };
-
   const go = async () => {
     const raw = input.value.trim();
     if (!raw) return;
-
-    // PMID: enbart siffror → öppna flik direkt, navigera när DOI är hämtad
     if (/^\d+$/.test(raw)) {
       btn.disabled    = true;
       btn.textContent = 'Hämtar DOI…';
       const win = window.open('', '_blank');
       win.document.write('<title>Hämtar artikel…</title><body style="font-family:sans-serif;padding:2rem;color:#666">Hämtar DOI, ett ögonblick…</body>');
       try {
-        const res      = await fetch(
-          `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=pubmed&id=${raw}&retmode=json`
-        );
+        const res      = await fetch(`https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=pubmed&id=${raw}&retmode=json`);
         const data     = await res.json();
         const summary  = data.result?.[raw];
         const doiEntry = summary?.articleids?.find(a => a.idtype === 'doi');
@@ -83,8 +75,6 @@
       }
       return;
     }
-
-    // URL: ludwig-konvertering direkt
     try {
       window.open(toludwig(raw), '_blank');
       input.value = '';
@@ -94,7 +84,6 @@
       console.error(e);
     }
   };
-
   btn.addEventListener('click', go);
   input.addEventListener('keydown', e => (e.key === 'Enter') && go());
 })();
