@@ -39,12 +39,12 @@
 <script>
 (() => {
   const input = document.getElementById('urlInput');
-  const btn = document.getElementById('openBtn');
+  const btn   = document.getElementById('openBtn');
 
   const toludwig = url => {
     const clean = url.split('?')[0];
-    const u = new URL(clean);
-    const host = u.hostname.replace(/\./g, '-');
+    const u     = new URL(clean);
+    const host  = u.hostname.replace(/\./g, '-');
     return `${u.protocol}//${host}.ludwig.lub.lu.se${u.pathname}${u.search}`;
   };
 
@@ -52,21 +52,19 @@
     const raw = input.value.trim();
     if (!raw) return;
 
-    // PMID: enbart siffror
+    // PMID: enbart siffror → hämta DOI från NCBI, kör genom ludwig
     if (/^\d+$/.test(raw)) {
-      btn.disabled = true;
+      btn.disabled    = true;
       btn.textContent = 'Hämtar DOI…';
       try {
-        const res = await fetch(
+        const res  = await fetch(
           `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=pubmed&id=${raw}&retmode=json`
         );
         const data = await res.json();
-        const summary = data.result?.[raw];
-        // elocationid ser ut som "10.1234/xyz [doi]" – vi plockar ut DOI-delen
-        const doiMatch = summary?.elocationid?.match(/^(10\.\S+)\s+\[doi\]/i);
+        const summary   = data.result?.[raw];
+        const doiMatch  = summary?.elocationid?.match(/^(10\.\S+)\s+\[doi\]/i);
         if (doiMatch) {
-          const proxyUrl = toludwig(`https://doi.org/${doiMatch[1]}`);
-          window.open(proxyUrl, '_blank');
+          window.open(toludwig(`https://doi.org/${doiMatch[1]}`), '_blank');
         } else {
           alert('Kunde inte hitta DOI för detta PMID. Kontrollera att numret är rätt.');
         }
@@ -74,22 +72,21 @@
         alert('Kunde inte nå NCBI. Kontrollera din internetanslutning.');
         console.error(e);
       } finally {
-        btn.disabled = false;
+        btn.disabled    = false;
         btn.textContent = 'Öppna via biblioteket';
-        input.value = '';
+        input.value     = '';
         input.focus();
       }
       return;
     }
 
-    // URL: ludwig-konvertering
+    // URL: ludwig-konvertering direkt
     try {
-      const finalUrl = tolung(raw); // <-- intentional typo caught below
       window.open(toludwig(raw), '_blank');
       input.value = '';
       input.focus();
     } catch (e) {
-      alert("Kunde inte tolka inmatningen. Ange en giltig länk eller ett PMID (enbart siffror).");
+      alert('Kunde inte tolka inmatningen. Ange en giltig länk eller ett PMID (enbart siffror).');
       console.error(e);
     }
   };
