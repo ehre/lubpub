@@ -7,9 +7,7 @@
 <link rel="icon" href="https://ehrencrona.org/favicon.ico">
 <link rel="stylesheet" href="https://ehrencrona.org/shared.css">
 <style>
-  .lubpub-card { padding: 24px 28px }
   .lubpub-card p { margin: 0 0 1.5rem; color: var(--muted); font-size: .95rem; text-align: center }
-  .footer { margin-top: 1.5rem; font-size: .8rem; color: var(--muted); text-align: center }
 </style>
 </head>
 <body>
@@ -25,10 +23,12 @@
   <main class="content">
     <div class="content-inner">
       <h1 class="home-title">LubPub Proxy</h1>
-      <div class="card lubpub-card">
-        <p>Klistra in artikellänk eller skriv ett PMID för att öppna i ny flik</p>
-        <input class="field" id="urlInput" type="search" placeholder="https://... eller PMID, t.ex. 36927524" autofocus>
-        <button class="btn" id="openBtn">Öppna via biblioteket</button>
+      <div class="card">
+        <p class="lubpub-card">Klistra in artikellänk eller skriv ett PMID för att öppna i ny flik</p>
+        <div class="search-row">
+          <input class="field" id="urlInput" type="search" placeholder="https://... eller PMID, t.ex. 36927524">
+          <button class="search-btn" id="openBtn">Öppna</button>
+        </div>
         <div class="footer">Länken rensas automatiskt efter klick</div>
       </div>
     </div>
@@ -69,7 +69,7 @@
         console.error(e);
       } finally {
         btn.disabled    = false;
-        btn.textContent = 'Öppna via biblioteket';
+        btn.textContent = 'Öppna';
         input.value     = '';
         input.focus();
       }
