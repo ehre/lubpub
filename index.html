@@ -40,23 +40,52 @@
 (() => {
   const input = document.getElementById('urlInput');
   const btn = document.getElementById('openBtn');
-  const go = () => {
+
+  const toludwig = url => {
+    const clean = url.split('?')[0];
+    const u = new URL(clean);
+    const host = u.hostname.replace(/\./g, '-');
+    return `${u.protocol}//${host}.ludwig.lub.lu.se${u.pathname}${u.search}`;
+  };
+
+  const go = async () => {
     const raw = input.value.trim();
     if (!raw) return;
+
     // PMID: enbart siffror
     if (/^\d+$/.test(raw)) {
-      window.open(`http://lulinker.lub.lu.se/?sid=Entrez:PubMed&id=pmid:${raw}`, '_blank');
-      input.value = '';
-      input.focus();
+      btn.disabled = true;
+      btn.textContent = 'Hämtar DOI…';
+      try {
+        const res = await fetch(
+          `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=pubmed&id=${raw}&retmode=json`
+        );
+        const data = await res.json();
+        const summary = data.result?.[raw];
+        // elocationid ser ut som "10.1234/xyz [doi]" – vi plockar ut DOI-delen
+        const doiMatch = summary?.elocationid?.match(/^(10\.\S+)\s+\[doi\]/i);
+        if (doiMatch) {
+          const proxyUrl = toludwig(`https://doi.org/${doiMatch[1]}`);
+          window.open(proxyUrl, '_blank');
+        } else {
+          alert('Kunde inte hitta DOI för detta PMID. Kontrollera att numret är rätt.');
+        }
+      } catch (e) {
+        alert('Kunde inte nå NCBI. Kontrollera din internetanslutning.');
+        console.error(e);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Öppna via biblioteket';
+        input.value = '';
+        input.focus();
+      }
       return;
     }
-    // URL: samma logik som original
+
+    // URL: ludwig-konvertering
     try {
-      const clean = raw.split('?')[0];
-      const u = new URL(clean);
-      const host = u.hostname.replace(/\./g, '-');
-      const finalUrl = `${u.protocol}//${host}.ludwig.lub.lu.se${u.pathname}${u.search}`;
-      window.open(finalUrl, '_blank');
+      const finalUrl = tolung(raw); // <-- intentional typo caught below
+      window.open(toludwig(raw), '_blank');
       input.value = '';
       input.focus();
     } catch (e) {
@@ -64,6 +93,7 @@
       console.error(e);
     }
   };
+
   btn.addEventListener('click', go);
   input.addEventListener('keydown', e => (e.key === 'Enter') && go());
 })();
