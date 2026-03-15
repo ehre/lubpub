@@ -57,6 +57,7 @@
       btn.disabled    = true;
       btn.textContent = 'Hämtar DOI…';
       const win = window.open('', '_blank');
+      win.document.write('<title>Hämtar artikel…</title><body style="font-family:sans-serif;padding:2rem;color:#666">Hämtar DOI, ett ögonblick…</body>');
       try {
         const res      = await fetch(
           `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=pubmed&id=${raw}&retmode=json`
