@@ -7,7 +7,8 @@
 <link rel="icon" href="https://ehrencrona.org/favicon.ico">
 <link rel="stylesheet" href="https://ehrencrona.org/shared.css">
 <style>
-  .lubpub-card { width: 100%; max-width: 450px; padding: 2.5rem }
+  .lubpub-card { width: 100%; max-width: 450px; padding: 2.5rem; margin: 0 auto }
+  .lubpub-card p { margin: 0 0 1.5rem; color: var(--muted); font-size: .95rem; text-align: center }
   .lubpub-card .field { border-color: var(--border) }
   .footer { margin-top: 1.5rem; font-size: .8rem; color: var(--muted); text-align: center }
 </style>
@@ -25,9 +26,9 @@
   <main class="content">
     <div class="content-inner">
       <h1 class="home-title">LubPub Proxy</h1>
-      <p style="text-align:center; color:var(--muted); font-size:.95rem; margin: 0 0 1.2rem">Klistra in artikellänk eller skriv ett PMID för att öppna i ny flik</p>
-      <div class="card lubpub-card" style="margin: 0 auto">
-        <input class="field" id="urlInput" type="text" placeholder="https://... eller PMID, t.ex. 36927524" autofocus>
+      <div class="card lubpub-card">
+        <p>Klistra in artikellänk eller skriv ett PMID för att öppna i ny flik</p>
+        <input class="field" id="urlInput" type="search" placeholder="https://... eller PMID, t.ex. 36927524" autofocus>
         <button class="btn" id="openBtn">Öppna via biblioteket</button>
         <div class="footer">Länken rensas automatiskt efter klick</div>
       </div>
@@ -46,47 +47,4 @@
   };
   const go = async () => {
     const raw = input.value.trim();
-    if (!raw) return;
-    if (/^\d+$/.test(raw)) {
-      btn.disabled    = true;
-      btn.textContent = 'Hämtar DOI…';
-      const win = window.open('', '_blank');
-      win.document.write('<title>Hämtar artikel…</title><body style="font-family:sans-serif;padding:2rem;color:#666">Hämtar DOI, ett ögonblick…</body>');
-      try {
-        const res      = await fetch(`https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=pubmed&id=${raw}&retmode=json`);
-        const data     = await res.json();
-        const summary  = data.result?.[raw];
-        const doiEntry = summary?.articleids?.find(a => a.idtype === 'doi');
-        if (doiEntry) {
-          win.location.href = toludwig(`https://doi.org/${doiEntry.value}`);
-        } else {
-          win.close();
-          alert('Kunde inte hitta DOI för detta PMID. Kontrollera att numret är rätt.');
-        }
-      } catch (e) {
-        win.close();
-        alert('Kunde inte nå NCBI. Kontrollera din internetanslutning.');
-        console.error(e);
-      } finally {
-        btn.disabled    = false;
-        btn.textContent = 'Öppna via biblioteket';
-        input.value     = '';
-        input.focus();
-      }
-      return;
-    }
-    try {
-      window.open(toludwig(raw), '_blank');
-      input.value = '';
-      input.focus();
-    } catch (e) {
-      alert('Kunde inte tolka inmatningen. Ange en giltig länk eller ett PMID (enbart siffror).');
-      console.error(e);
-    }
-  };
-  btn.addEventListener('click', go);
-  input.addEventListener('keydown', e => (e.key === 'Enter') && go());
-})();
-</script>
-</body>
-</html>
+    if (!raw)
