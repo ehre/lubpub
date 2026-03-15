@@ -57,14 +57,14 @@
       btn.disabled    = true;
       btn.textContent = 'Hämtar DOI…';
       try {
-        const res  = await fetch(
+        const res     = await fetch(
           `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=pubmed&id=${raw}&retmode=json`
         );
-        const data = await res.json();
-        const summary   = data.result?.[raw];
-        const doiMatch  = summary?.elocationid?.match(/^(10\.\S+)\s+\[doi\]/i);
-        if (doiMatch) {
-          window.open(toludwig(`https://doi.org/${doiMatch[1]}`), '_blank');
+        const data    = await res.json();
+        const summary = data.result?.[raw];
+        const doiEntry = summary?.articleids?.find(a => a.idtype === 'doi');
+        if (doiEntry) {
+          window.open(toludwig(`https://doi.org/${doiEntry.value}`), '_blank');
         } else {
           alert('Kunde inte hitta DOI för detta PMID. Kontrollera att numret är rätt.');
         }
