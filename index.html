@@ -52,23 +52,26 @@
     const raw = input.value.trim();
     if (!raw) return;
 
-    // PMID: enbart siffror → hämta DOI från NCBI, kör genom ludwig
+    // PMID: enbart siffror → öppna flik direkt, navigera när DOI är hämtad
     if (/^\d+$/.test(raw)) {
       btn.disabled    = true;
       btn.textContent = 'Hämtar DOI…';
+      const win = window.open('', '_blank');
       try {
-        const res     = await fetch(
+        const res      = await fetch(
           `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=pubmed&id=${raw}&retmode=json`
         );
-        const data    = await res.json();
-        const summary = data.result?.[raw];
+        const data     = await res.json();
+        const summary  = data.result?.[raw];
         const doiEntry = summary?.articleids?.find(a => a.idtype === 'doi');
         if (doiEntry) {
-          window.open(toludwig(`https://doi.org/${doiEntry.value}`), '_blank');
+          win.location.href = toludwig(`https://doi.org/${doiEntry.value}`);
         } else {
+          win.close();
           alert('Kunde inte hitta DOI för detta PMID. Kontrollera att numret är rätt.');
         }
       } catch (e) {
+        win.close();
         alert('Kunde inte nå NCBI. Kontrollera din internetanslutning.');
         console.error(e);
       } finally {
