@@ -1,11 +1,16 @@
 <!DOCTYPE html>
-<html lang="sv">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>LubPub</title>
 <link rel="icon" href="https://ehrencrona.org/favicon.ico">
 <link rel="stylesheet" href="https://ehrencrona.org/shared.css">
+<style>
+  .note{margin:.85rem 0 0;font-size:.9rem;min-height:1.2em;color:var(--muted-light)}
+  @media (prefers-color-scheme:dark){.note{color:var(--muted-dark)}}
+  .note.error{color:var(--brand)}
+</style>
 </head>
 <body>
 <div class="page">
@@ -22,12 +27,14 @@
       <h1 class="home-title">LubPub Proxy</h1>
       <div class="card">
         <div class="search-wrap">
-          <p class="card-desc">Paste an article link or enter a PMID to open in a new tab</p>
+          <p class="card-desc">Paste an article link, a DOI or a PMID to open in a new tab</p>
           <div class="search-row">
-            <input class="field" id="urlInput" type="search" placeholder="https://... or PMID, e.g. 36927524">
+            <input class="field" id="urlInput" type="search" placeholder="https://… , 10.1038/… or PMID, e.g. 36927524">
             <button class="search-btn" id="openBtn">Open</button>
           </div>
+          <p class="note" id="note"></p>
         </div>
+      </div>
     </div>
   </main>
 </div>
@@ -35,54 +42,97 @@
 (() => {
   const input = document.getElementById('urlInput');
   const btn   = document.getElementById('openBtn');
+  const note  = document.getElementById('note');
+
+  const setNote = (msg, isError) => {
+    note.textContent = msg || '';
+    note.classList.toggle('error', !!isError);
+  };
+
   const toludwig = url => {
     const clean = url.split('?')[0];
     const u     = new URL(clean);
     const host  = u.hostname.replace(/\./g, '-');
     return `${u.protocol}//${host}.ludwig.lub.lu.se${u.pathname}${u.search}`;
   };
-  const go = async () => {
-    const raw = input.value.trim();
+
+  // Accepts "12345678", "PMID: 12345678", "doi:10.1038/nn.4000", plain URLs.
+  const normalise = s => s.trim().replace(/^pmid[:\s]*/i, '').replace(/^doi[:\s]*/i, '');
+  const isPmid    = s => /^\d+$/.test(s);
+  const isDoi     = s => /^10\.\d{4,9}\/\S+$/.test(s);
+
+  const resolvePmid = async pmid => {
+    const res  = await fetch(`https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=pubmed&id=${pmid}&retmode=json`);
+    const data = await res.json();
+    const doi  = data.result?.[pmid]?.articleids?.find(a => a.idtype === 'doi');
+    return doi ? doi.value : null;
+  };
+
+  // sameTab = true  -> deep link: redirect this tab (no pop-up, so no blocker)
+  // sameTab = false -> button/Enter: open a new tab from the user's click
+  const go = async (sameTab = false) => {
+    const raw = normalise(input.value);
     if (!raw) return;
-    if (/^\d+$/.test(raw)) {
-      btn.disabled    = true;
-      btn.textContent = 'Fetching DOI…';
-      const win = window.open('', '_blank');
-      win.document.write('<title>Fetching article…</title><body style="font-family:sans-serif;padding:2rem;color:#666">Fetching DOI, one moment…</body>');
-      try {
-        const res      = await fetch(`https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=pubmed&id=${raw}&retmode=json`);
-        const data     = await res.json();
-        const summary  = data.result?.[raw];
-        const doiEntry = summary?.articleids?.find(a => a.idtype === 'doi');
-        if (doiEntry) {
-          win.location.href = toludwig(`https://doi.org/${doiEntry.value}`);
-        } else {
-          win.close();
-          alert("Couldn't find a DOI for this PMID. Check that the number is correct.");
-        }
-      } catch (e) {
-        win.close();
-        alert("Couldn't reach NCBI. Check your internet connection.");
-        console.error(e);
-      } finally {
-        btn.disabled    = false;
-        btn.textContent = 'Open';
-        input.value     = '';
+    setNote('');
+
+    let win = null;
+    if (!sameTab) {
+      win = window.open('', '_blank');
+      if (!win) {
+        setNote('Your browser blocked the new tab. Allow pop-ups for lubpub.ehrencrona.org, then try again.', true);
+        return;
+      }
+      win.document.write('<title>Opening…</title><body style="font-family:system-ui,sans-serif;padding:2rem;color:#666">Opening…</body>');
+    }
+
+    const land = url => {
+      if (sameTab) {
+        location.replace(url);
+      } else {
+        win.location.href = url;
+        input.value = '';
         input.focus();
       }
-      return;
-    }
+    };
+    const fail = msg => {
+      if (win) win.close();
+      setNote(msg, true);
+    };
+
+    btn.disabled = true;
     try {
-      window.open(toludwig(raw), '_blank');
-      input.value = '';
-      input.focus();
+      if (isPmid(raw)) {
+        btn.textContent = 'Fetching DOI…';
+        const doi = await resolvePmid(raw);
+        if (!doi) return fail('No DOI found for that PMID. Check the number, or paste the article link instead.');
+        land(toludwig(`https://doi.org/${doi}`));
+      } else if (isDoi(raw)) {
+        land(toludwig(`https://doi.org/${raw}`));
+      } else {
+        land(toludwig(raw));
+      }
     } catch (e) {
-      alert("Couldn't parse the input. Enter a valid link or a PMID (numbers only).");
       console.error(e);
+      fail(isPmid(raw)
+        ? 'NCBI did not respond. Check your connection and try again.'
+        : 'That input could not be read. Enter a full link (with https://), a DOI, or a PMID.');
+    } finally {
+      btn.disabled    = false;
+      btn.textContent = 'Open';
     }
   };
-  btn.addEventListener('click', go);
-  input.addEventListener('keydown', e => (e.key === 'Enter') && go());
+
+  btn.addEventListener('click', () => go(false));
+  input.addEventListener('keydown', e => (e.key === 'Enter') && go(false));
+
+  // Deep links: ?pmid=25803835  ·  ?doi=10.1038/nn.4000  ·  ?url=<encoded link>
+  const params = new URLSearchParams(location.search);
+  const deep   = params.get('pmid') || params.get('doi') || params.get('url');
+  if (deep) {
+    input.value = deep;
+    setNote('Opening…');
+    go(true);
+  }
 })();
 </script>
 </body>
